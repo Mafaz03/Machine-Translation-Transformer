@@ -220,10 +220,10 @@ class EncoderLayer(nn.Module):
         return x                                            # [B, src_len, d_model]
     
 
-
 class DecoderLayer(nn.Module):
     def __init__(self, d_model: int, num_heads: int, d_ff: int, dropout: float = 0.1) -> None:
         super().__init__()
+        self.d_model = d_model
         self.self_attn = MultiHeadAttention(d_model = d_model, num_heads = num_heads, dropout = dropout)
         self.cross_attn = MultiHeadAttention(d_model, num_heads, dropout)
 
@@ -259,7 +259,6 @@ class DecoderLayer(nn.Module):
         x = self.layer_norm3(x + self.dropout(ffn_out))            # [B, tgt_len, d_model]
 
         return x
-    
 
 class Encoder(nn.Module):
     def __init__(self, layer: EncoderLayer, N: int) -> None:
@@ -296,3 +295,99 @@ class Decoder(nn.Module):
         x = self.layer_norm(x)
 
         return x
+    
+
+class Transformer(nn.Module):
+    """
+    Full Encoder-Decoder Transformer for sequence-to-sequence tasks.
+
+    Args:
+        src_vocab_size (int)  : Source vocabulary size.
+        tgt_vocab_size (int)  : Target vocabulary size.
+        d_model        (int)  : Model dimensionality (default 512).
+        N              (int)  : Number of encoder/decoder layers (default 6).
+        num_heads      (int)  : Number of attention heads (default 8).
+        d_ff           (int)  : FFN inner dimensionality (default 2048).
+        dropout        (float): Dropout probability (default 0.1).
+    """
+
+    def __init__(
+        self,
+        src_vocab_size: int,
+        tgt_vocab_size: int,
+        d_model:   int   = 512,
+        N:         int   = 6,
+        num_heads: int   = 8,
+        d_ff:      int   = 2048,
+        dropout:   float = 0.1,
+    ) -> None:
+        super().__init__()
+
+        self.d_model = d_model
+
+        self.src_embedding = nn.Embedding(src_vocab_size, d_model)
+        self.tgt_embedding = nn.Embedding(tgt_vocab_size, d_model)
+        
+        self.positional_encodings = PositionalEncoding(d_model = d_model, dropout = dropout, max_len = 5000)
+
+        encoder_layer = EncoderLayer(d_model = d_model, num_heads = num_heads, d_ff = d_ff, dropout = dropout)
+        self.encoder  = Encoder(layer = encoder_layer, N = N)
+
+        decoder_layer = DecoderLayer(d_model = d_model, num_heads = num_heads, d_ff = d_ff, dropout = dropout)
+        self.decoder  = Decoder(layer = decoder_layer, N = N)
+
+        self.fc_out = nn.Linear(d_model, tgt_vocab_size)
+
+        self.src_vocab_size = src_vocab_size
+        self.tgt_vocab_size = tgt_vocab_size
+
+    def encode(
+        self,
+        src:      torch.Tensor,
+        src_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Run the full encoder stack.
+
+        Args:
+            src      : Token indices, shape [batch, src_len]
+            src_mask : shape [batch, 1, 1, src_len]
+
+        Returns:
+            memory : Encoder output, shape [batch, src_len, d_model]
+        """
+        src = self.src_embedding(src) * math.sqrt(self.d_model)
+        src = self.positional_encodings(src)
+        self.memory = self.encoder(src, src_mask)   # [B, src_len, d_model]
+        return self.memory      
+
+
+    def decode(
+        self,
+        memory:   torch.Tensor,
+        src_mask: torch.Tensor,
+        tgt:      torch.Tensor,
+        tgt_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Run the full decoder stack and project to vocabulary logits.
+
+        Args:
+            memory   : Encoder output,  shape [batch, src_len, d_model]
+            src_mask : shape [batch, 1, 1, src_len]
+            tgt      : Token indices,   shape [batch, tgt_len]
+            tgt_mask : shape [batch, 1, tgt_len, tgt_len]
+
+        Returns:
+            logits : shape [batch, tgt_len, tgt_vocab_size]
+        """
+        tgt = self.tgt_embedding(tgt) * math.sqrt(self.d_model)
+        tgt = self.positional_encodings(tgt)
+
+        out = self.decoder(tgt, memory, src_mask, tgt_mask)
+        return self.fc_out(out)               # [B, tgt_len, d_model]
+
+    def forward(self, src, tgt, src_mask, tgt_mask):
+        memory = self.encode(src, src_mask)
+        logits = self.decode(memory, src_mask, tgt, tgt_mask)
+        return logits
