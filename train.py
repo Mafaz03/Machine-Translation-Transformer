@@ -101,3 +101,27 @@ def run_epoch(
         losses.append(total_loss / len(data_iter))
 
     return sum(losses)/len(losses)
+
+
+def greedy_decode(model, src, src_mask, max_len, start_symbol, end_symbol, device = "cpu"):
+    src = src.to(device)
+    src_mask = src_mask.to(device)
+    
+    # encode
+    ys = torch.ones(src.size(0), 1).fill_(start_symbol).long().to(device)
+    memory = model.encode(src, src_mask)
+
+    # loop
+    for _ in range(max_len):
+        # decoding
+        tgt_mask = make_tgt_mask(ys).to(device)
+        out = model.decode(memory, src_mask, ys, tgt_mask)
+
+        prob = out[:, -1, :] # (B, vocab)
+        next_word = prob.argmax(dim=-1)
+
+        ys = torch.cat([ys, next_word.unsqueeze(1)], dim=1)
+
+        if (next_word == end_symbol).all():
+            break
+    return ys
