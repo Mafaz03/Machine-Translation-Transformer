@@ -242,6 +242,7 @@ def run_training_experiment() -> None:
     # 2. Build dataset / vocabs from dataset.py
     language_dataset = Multi30kDataset(split = "train")
 
+    device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
     config = {
         "src_vocab_size"   : len(language_dataset.de_vocab),
         "tgt_vocab_size"   : len(language_dataset.en_vocab),
@@ -253,7 +254,7 @@ def run_training_experiment() -> None:
         "train_batch_size" : 32,
         "test_batch_size"  : 32,
         "epochs"           : 10,
-        "device"           : 'cuda' if torch.cuda.is_available() else 'cpu',
+        "device"           : device,
         'save_every'       : 4
     }
 
@@ -299,10 +300,10 @@ def run_training_experiment() -> None:
     for epoch in range(config['epochs']):
         transformer.train()
         train_loss = run_epoch(train_dataloader, transformer, loss_fn,
-                        optimizer, scheduler, epoch, is_train=True, epoch_num = 1)
+                        optimizer, scheduler, 1, is_train=True, device=config['device'])
         transformer.eval()
         test_loss = run_epoch(test_dataloader, transformer, loss_fn,
-                        None, None, epoch, is_train=False, epoch_num = 1)
+                        None, None, 1, is_train=False, device=config['device'])
         wandb.log({'epoch': epoch, 'train_loss': train_loss, 'test_loss': test_loss})
         
         if epoch % config['save_every'] == 0:

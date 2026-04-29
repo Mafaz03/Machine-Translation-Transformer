@@ -13,17 +13,23 @@ class Multi30kDataset:
         self.dataset = load_dataset("bentrevett/multi30k")
         self.split = split
 
-        self.spacy_de = spacy.load("de_core_news_sm") # German
-        self.spacy_en = spacy.load("en_core_web_sm")  # english
+        self.spacy_de = spacy.load("de_core_news_sm", disable=["parser", "ner", "tagger"]) # German
+        self.spacy_en = spacy.load("en_core_web_sm", disable=["parser", "ner", "tagger"])  # english
 
         self.specials = ["<unk>", "<pad>", "<sos>", "<eos>"] 
         self.build_vocab()
 
-    def tokenize_de(self, text): # fancy way of lowering text but it have more info ike pos etc
-        return [tok.text.lower() for tok in self.spacy_de(text)]
-   
+    # def tokenize_de(self, text): # fancy way of lowering text but it have more info ike pos etc
+    #     return [tok.text.lower() for tok in self.spacy_de(text)]
+
+    def tokenize_de(self, text):
+        return text.lower().split()
     def tokenize_en(self, text):
-        return [tok.text.lower() for tok in self.spacy_en(text)]  
+        return text.lower().split()
+   
+    # def tokenize_en(self, text):
+    #     return [tok.text.lower() for tok in self.spacy_en(text)]  
+    
     
     def build_vocab(self):
         print("Building vocab, please wait...")
@@ -82,13 +88,6 @@ class Multi30kDataset:
         
         return processed_data
     
-
-# def collate_fn(batch):
-#     src_batch, tgt_batch = zip(*batch)
-#     src_batch = pad_sequence(src_batch, padding_value=1, batch_first=True)  # pad_idx = 1
-#     tgt_batch = pad_sequence(tgt_batch, padding_value=1, batch_first=True)
-#     return src_batch, tgt_batch
-
 class TranslationDataset(Dataset):
     def __init__(self, data):
         self.data = data
@@ -103,8 +102,6 @@ class TranslationDataset(Dataset):
 
 def collate_fn(batch):
     src_batch, tgt_batch = zip(*batch)
-    src_batch = [torch.tensor(x) for x in src_batch]
-    tgt_batch = [torch.tensor(x) for x in tgt_batch]
     src_batch = pad_sequence(src_batch, padding_value=1, batch_first=True)
     tgt_batch = pad_sequence(tgt_batch, padding_value=1, batch_first=True)
     return src_batch, tgt_batch
