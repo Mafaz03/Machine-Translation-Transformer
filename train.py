@@ -108,7 +108,7 @@ def run_epoch(
     return sum(losses)/len(losses)
 
 
-def greedy_decode(model, src, src_mask, max_len, start_symbol, end_symbol, device = "cpu"):
+def greedy_decode(model, src, src_mask, max_len, start_symbol, end_symbol, device = "cpu", break_at_eos = True):
     src = src.to(device)
     src_mask = src_mask.to(device)
     
@@ -127,7 +127,7 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol, end_symbol, devic
 
         ys = torch.cat([ys, next_word.unsqueeze(1)], dim=1)
 
-        if (next_word == end_symbol).all():
+        if (next_word == end_symbol).all() and break_at_eos:
             break
     return ys
 
@@ -305,6 +305,7 @@ def run_training_experiment() -> None:
         test_loss = run_epoch(test_dataloader, transformer, loss_fn,
                         None, None, 1, is_train=False, device=config['device'])
         wandb.log({'epoch': epoch, 'train_loss': train_loss, 'test_loss': test_loss})
+        print(f"EPOCH: {epoch} => Train loss: {train_loss:.4f} | Test loss: {test_loss:.4f}")
         
         if epoch % config['save_every'] == 0:
             save_checkpoint(transformer, optimizer, scheduler, epoch)
