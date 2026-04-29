@@ -324,6 +324,10 @@ class Transformer(nn.Module):
         super().__init__()
 
         self.d_model = d_model
+        self.N = N
+        self.num_heads = num_heads
+        self.d_ff = d_ff
+        self.dropout = dropout
 
         self.src_embedding = nn.Embedding(src_vocab_size, d_model)
         self.tgt_embedding = nn.Embedding(tgt_vocab_size, d_model)
@@ -384,8 +388,8 @@ class Transformer(nn.Module):
         tgt = self.tgt_embedding(tgt) * math.sqrt(self.d_model)
         tgt = self.positional_encodings(tgt)
 
-        out = self.decoder(tgt, memory, src_mask, tgt_mask)
-        return self.fc_out(out)               # [B, tgt_len, d_model]
+        out = self.decoder(tgt, memory, src_mask, tgt_mask) # [B, tgt_len, d_model]
+        return self.fc_out(out)               # [B, tgt_len, d_model] -> [B, tgt_len, tgt_vocab_size]
 
     def forward(self, src, tgt, src_mask, tgt_mask):
         memory = self.encode(src, src_mask)

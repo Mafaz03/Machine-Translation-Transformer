@@ -8,7 +8,12 @@ from dataset import Multi30kDataset
 from model import Transformer, make_src_mask, make_tgt_mask
 
 from tqdm import tqdm
+from nltk.translate.bleu_score import corpus_bleu
 
+from dataset import *
+from lr_scheduler import *
+
+import wandb
 class LabelSmoothingLoss(nn.Module):
     def __init__(self, vocab_size: int, pad_idx: int = 1, smoothing: float = 0.1):
         super().__init__()
@@ -125,3 +130,184 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol, end_symbol, devic
         if (next_word == end_symbol).all():
             break
     return ys
+
+
+
+def evaluate_bleu(
+    model: Transformer,
+    test_dataloader,
+    tgt_vocab,
+    device: str = "cpu",
+    max_len: int = 100,
+) -> float:
+
+    model.eval()
+
+    references = []
+    hypotheses = []
+
+    token_to_idx = {v: i for i, v in tgt_vocab.items()}
+    sos_idx = token_to_idx["<sos>"]
+    eos_idx = token_to_idx["<eos>"]
+    pad_idx = token_to_idx["<pad>"]
+
+    itos = tgt_vocab  # idx -> token
+
+    with torch.no_grad():
+        for num, (src, tgt) in enumerate(test_dataloader):
+            # if num == 5: break
+            B = src.size(0)
+
+            ys = greedy_decode(model = model, src = src, 
+                          src_mask = make_src_mask(src).to(device),
+                          max_len = max_len, start_symbol = sos_idx, end_symbol = eos_idx,
+                          device = device, break_at_eos = False 
+                          )
+
+            # Convert predictions and targets to words
+            for i in tqdm(range(B)):
+
+                pred_tokens = ys[i].tolist()
+                tgt_tokens  = tgt[i].tolist()
+
+                # Remove special tokens
+                pred_sentence = []
+                for tok in pred_tokens:
+                    if tok == eos_idx:
+                        break
+                    if tok not in [sos_idx, pad_idx]:
+                        pred_sentence.append(itos[tok])
+
+                ref_sentence = []
+                for tok in tgt_tokens:
+                    if tok == eos_idx:
+                        break
+                    if tok not in [sos_idx, pad_idx]:
+                        ref_sentence.append(itos[tok])
+
+                hypotheses.append(pred_sentence)
+                references.append([ref_sentence])  # list of references
+
+    bleu = corpus_bleu(references, hypotheses) * 100
+    return bleu
+
+
+def save_checkpoint(
+    model: Transformer,
+    optimizer: torch.optim.Optimizer,
+    scheduler,
+    epoch: int,
+    path: str = "checkpoint.pt",
+) -> None:
+    torch.save(
+        {
+            "epoch"               : epoch,
+            "model_state_dict"    : model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "scheduler_state_dict": scheduler.state_dict(),
+            "model_config": {
+                "src_vocab_size": model.src_vocab_size,
+                "tgt_vocab_size": model.tgt_vocab_size,
+                "d_model"       : model.d_model,
+                "N"             : model.N,
+                "num_heads"     : model.num_heads,
+                "d_ff"          : model.d_ff,
+                "dropout"       : model.dropout,
+            }
+         }
+    ,path
+    )
+
+def load_checkpoint(
+    path: str,
+    model: Transformer,
+    optimizer: Optional[torch.optim.Optimizer] = None,
+    scheduler=None,
+    device = "cpu"
+) -> int:
+
+    checkpoint = torch.load(path, map_location=device)
+    model.load_state_dict(checkpoint["model_state_dict"])
+
+    if optimizer is not None and "optimizer_state_dict" in checkpoint:
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+
+    if scheduler is not None and "scheduler_state_dict" in checkpoint:
+        scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+
+    return checkpoint["epoch"]
+
+
+def run_training_experiment() -> None:
+    # 2. Build dataset / vocabs from dataset.py
+    language_dataset = Multi30kDataset(split = "train")
+
+    config = {
+        "src_vocab_size"   : len(language_dataset.de_vocab),
+        "tgt_vocab_size"   : len(language_dataset.en_vocab),
+        "d_model"          : 512,
+        "N"                : 6,
+        "num_heads"        : 8,
+        "d_ff"             : 2048,
+        "dropout"          : 0.1,
+        "train_batch_size" : 32,
+        "test_batch_size"  : 32,
+        "epochs"           : 10,
+        "device"           : 'cuda' if torch.cuda.is_available() else 'cpu',
+        'save_every'       : 4
+    }
+
+
+    # 1. Init W&B
+    wandb.init(project="Machine Translation Transformer", config = config)
+
+    # 3. Create DataLoaders for train / val 
+    processed_dataset = language_dataset.process_data()
+    train_dataset_obj = TranslationDataset(processed_dataset)
+    train_dataloader = DataLoader(
+        train_dataset_obj,
+        batch_size=config["train_batch_size"],
+        shuffle=True,
+        collate_fn=collate_fn
+    )
+
+    language_dataset.split = "test"
+    processed_dataset = language_dataset.process_data()
+    test_dataset_obj = TranslationDataset(processed_dataset)
+    test_dataloader = DataLoader(
+        test_dataset_obj,
+        batch_size=config["test_batch_size"],
+        shuffle=True,
+        collate_fn=collate_fn
+    )
+
+    # 4. Instantiate Transformer with hyperparameters from config
+    transformer = Transformer(src_vocab_size = config["src_vocab_size"], tgt_vocab_size = config['tgt_vocab_size'],
+                            d_model = 512, N = 6, num_heads = 8, d_ff = 2048,
+                            dropout = 0.1).to(config["device"])
+
+    # 5. Instantiate Adam optimizer (β1=0.9, β2=0.98, ε=1e-9)
+    optimizer = optim.Adam(transformer.parameters(), betas = [0.9, 0.98], lr=1e-4)
+
+    # 6. Instantiate NoamScheduler(optimizer, d_model, warmup_steps=4000)
+    scheduler = NoamScheduler(optimizer, d_model = config["d_model"], warmup_steps = 4000)
+
+    # 7. Instantiate LabelSmoothingLoss(vocab_size, pad_idx, smoothing=0.1)
+    loss_fn = LabelSmoothingLoss(vocab_size = config["tgt_vocab_size"], pad_idx = 1, smoothing = 0.1)
+
+    # 8. Training loop:
+    for epoch in range(config['epochs']):
+        transformer.train()
+        train_loss = run_epoch(train_dataloader, transformer, loss_fn,
+                        optimizer, scheduler, epoch, is_train=True, epoch_num = 1)
+        transformer.eval()
+        test_loss = run_epoch(test_dataloader, transformer, loss_fn,
+                        None, None, epoch, is_train=False, epoch_num = 1)
+        wandb.log({'epoch': epoch, 'train_loss': train_loss, 'test_loss': test_loss})
+        
+        if epoch % config['save_every'] == 0:
+            save_checkpoint(transformer, optimizer, scheduler, epoch)
+
+    # 9. Final BLEU on test set
+    bleu = evaluate_bleu(transformer, test_dataloader, language_dataset.en_itos, device = config['device'])
+    wandb.log({'test_bleu': bleu})
