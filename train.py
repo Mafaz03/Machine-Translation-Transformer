@@ -307,7 +307,8 @@ def run_training_experiment() -> None:
         wandb.log({'epoch': epoch, 'train_loss': train_loss, 'test_loss': test_loss})
         print(f"EPOCH: {epoch} => Train loss: {train_loss:.4f} | Test loss: {test_loss:.4f}")
         
-        if epoch % config['save_every'] == 0:
+        if (epoch % config['save_every'] == 0) or (epoch == config["epochs"]-1):
+            print(f"Saving at epoch: {epoch}")
             save_checkpoint(transformer, optimizer, scheduler, epoch)
 
     # 9. Final BLEU on test set
