@@ -288,7 +288,7 @@ def run_training_experiment() -> None:
                             dropout = 0.1).to(config["device"])
 
     # 5. Instantiate Adam optimizer (β1=0.9, β2=0.98, ε=1e-9)
-    optimizer = optim.Adam(transformer.parameters(), betas = [0.9, 0.98], lr=1e-4)
+    optimizer = optim.Adam(transformer.parameters(), betas = [0.9, 0.98], lr=1.5)
 
     # 6. Instantiate NoamScheduler(optimizer, d_model, warmup_steps=4000)
     scheduler = NoamScheduler(optimizer, d_model = config["d_model"], warmup_steps = 4000)

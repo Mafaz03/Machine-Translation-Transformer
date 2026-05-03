@@ -38,7 +38,7 @@ def get_lr_history(
         list[float]: LR value at each step (length == total_steps).
     """
     dummy_model = torch.nn.Linear(1, 1)
-    optimizer   = optim.Adam(dummy_model.parameters(), lr=1.0)
+    optimizer   = optim.Adam(dummy_model.parameters(), lr=1.3)
     scheduler   = NoamScheduler(optimizer, d_model=d_model, warmup_steps=warmup_steps)
 
     history = []
@@ -54,8 +54,8 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     D_MODEL      = 512
-    WARMUP_STEPS = 4000
-    TOTAL_STEPS  = 20_000
+    WARMUP_STEPS = 1000
+    TOTAL_STEPS  = 7000
 
     lrs = get_lr_history(D_MODEL, WARMUP_STEPS, TOTAL_STEPS)
 
