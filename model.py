@@ -6,6 +6,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from dataset import Multi30kDataset
+
+
+
+
 
 def scaled_dot_product_attention(
     Q: torch.Tensor,
@@ -395,3 +400,73 @@ class Transformer(nn.Module):
         memory = self.encode(src, src_mask)
         logits = self.decode(memory, src_mask, tgt, tgt_mask)
         return logits
+
+    def infer(self, src_sentence: str) -> str:
+        # build vocab
+        language_dataset = Multi30kDataset(split = "train")
+        src_vocab = len(language_dataset.de_vocab)
+        tgt_vocab = len(language_dataset.en_vocab)
+
+        # text to tokens
+        src = torch.tensor([language_dataset.de_vocab[i] for i in src_sentence.split()]).unsqueeze(0)
+        src_mask = make_src_mask(src).to(src.device)
+
+        # text to tokens
+        transformer = Transformer(src_vocab_size = src_vocab, tgt_vocab_size = tgt_vocab,
+                          d_model = 512, N = 6, num_heads = 8, d_ff = 2048,
+                          dropout = 0.1)
+
+        load_checkpoint("checkpoint.pt", transformer)
+
+        # decode
+        sos_idx = 2
+        eos_idx = 3
+        prediction_idx = greedy_decode(transformer, src, src_mask, 40, sos_idx, eos_idx, src.device, break_at_eos = True)
+        no_clean = ' '.join([language_dataset.en_itos[i.item()] for i in prediction_idx[0]])
+        clean = no_clean.split("<sos>")[-1].strip().split("<eos>")[0].strip()
+
+        return clean
+    
+
+
+def load_checkpoint(
+    path: str,
+    model: Transformer,
+    optimizer: Optional[torch.optim.Optimizer] = None,
+    scheduler=None,
+    device = "cpu"
+) -> int:
+
+    checkpoint = torch.load(path, map_location=device)
+    model.load_state_dict(checkpoint["model_state_dict"])
+
+    if optimizer is not None and "optimizer_state_dict" in checkpoint:
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+
+    if scheduler is not None and "scheduler_state_dict" in checkpoint:
+        scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+
+    return checkpoint["epoch"]
+
+def greedy_decode(model, src, src_mask, max_len, start_symbol, end_symbol, device = "cpu", break_at_eos = True):
+    src = src.to(device)
+    src_mask = src_mask.to(device)
+    
+    # encode
+    ys = torch.ones(src.size(0), 1).fill_(start_symbol).long().to(device)
+    memory = model.encode(src, src_mask)
+
+    # loop
+    for _ in range(max_len):
+        # decoding
+        tgt_mask = make_tgt_mask(ys).to(device)
+        out = model.decode(memory, src_mask, ys, tgt_mask)
+
+        prob = out[:, -1, :] # (B, vocab)
+        next_word = prob.argmax(dim=-1)
+
+        ys = torch.cat([ys, next_word.unsqueeze(1)], dim=1)
+
+        if (next_word == end_symbol).all() and break_at_eos:
+            break
+    return ys
