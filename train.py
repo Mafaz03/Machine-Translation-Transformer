@@ -313,4 +313,5 @@ def run_training_experiment() -> None:
 
     # 9. Final BLEU on test set
     bleu = evaluate_bleu(transformer, test_dataloader, language_dataset.en_itos, device = config['device'])
+    print(f"Blue score: {blue}")
     wandb.log({'test_bleu': bleu})
