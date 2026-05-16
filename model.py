@@ -144,6 +144,15 @@ class MultiHeadAttention(nn.Module):
         output = self.WO(output)
         return output
     
+class LearnedPositionalEncoding(nn.Module):
+    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000):
+        super().__init__()
+        self.dropout = nn.Dropout(dropout)
+ 
+        self.embedding = torch.nn.Embedding(max_len, d_model)
+
+    def forward(self, x:torch.tensor):
+        return self.dropout(self.embedding(x))
 
 
 class PositionalEncoding(nn.Module):

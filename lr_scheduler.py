@@ -3,7 +3,8 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import LRScheduler
 
 class NoamScheduler(LRScheduler):
-    def __init__(self, optimizer, d_model, warmup_steps, last_epoch=-1):
+    def __init__(self, optimizer, d_model, warmup_steps, last_epoch=-1, const_lr = None):
+        self.const_lr     = const_lr
         self.d_model      = d_model
         self.warmup_steps = warmup_steps
         super().__init__(optimizer, last_epoch)  
@@ -16,6 +17,9 @@ class NoamScheduler(LRScheduler):
         )
 
     def get_lr(self):
+        if self.const_lr:
+            return self.base_lrs
+        
         scale = self._get_lr_scale()
         return [base_lr * scale for base_lr in self.base_lrs]
     
