@@ -106,45 +106,47 @@ def run_epoch(
                 decoder_weights_WQ = 0
 
                 ## Gradient tracking ##
-                for name, param in model.named_parameters():
-                    if param.grad is None:
-                        continue
-                    if "WQ" in name or "WK" in name or "WV" in name:
-                        param_grad = param.grad.detach().norm(2).item()     
-                        # encoder
-                        if "encoder" in name and ".weight" in name:
-                            if "WQ" in name:
-                                encoder_weights_WQ += param_grad
-                            if "WK" in name:
-                                encoder_weights_WK += param_grad
-                            if "WV" in name:
-                                encoder_weights_WV += param_grad
-                            
-                        if "decoder" in name and ".weight" in name:
-                            if "WQ" in name:
-                                decoder_weights_WQ += param_grad
-                            if "WK" in name:
-                                decoder_weights_WK += param_grad
-                            if "WV" in name:
-                                decoder_weights_WV += param_grad
+                log_grad = False
+                if log_grad:
+                    for name, param in model.named_parameters():
+                        if param.grad is None:
+                            continue
+                        if "WQ" in name or "WK" in name or "WV" in name:
+                            param_grad = param.grad.detach().norm(2).item()     
+                            # encoder
+                            if "encoder" in name and ".weight" in name:
+                                if "WQ" in name:
+                                    encoder_weights_WQ += param_grad
+                                if "WK" in name:
+                                    encoder_weights_WK += param_grad
+                                if "WV" in name:
+                                    encoder_weights_WV += param_grad
+                                
+                            if "decoder" in name and ".weight" in name:
+                                if "WQ" in name:
+                                    decoder_weights_WQ += param_grad
+                                if "WK" in name:
+                                    decoder_weights_WK += param_grad
+                                if "WV" in name:
+                                    decoder_weights_WV += param_grad
 
-                grad_norm = param.grad.detach().norm(2).item()
-                print(f"encoder_weights_WV --> {encoder_weights_WV}")
-                print(f"encoder_weights_WK --> {encoder_weights_WK}")
-                print(f"encoder_weights_WQ --> {encoder_weights_WQ}\n")
+                    grad_norm = param.grad.detach().norm(2).item()
+                    print(f"encoder_weights_WV --> {encoder_weights_WV}")
+                    print(f"encoder_weights_WK --> {encoder_weights_WK}")
+                    print(f"encoder_weights_WQ --> {encoder_weights_WQ}\n")
 
-                print(f"decoder_weights_WV --> {decoder_weights_WV}")
-                print(f"decoder_weights_WK --> {decoder_weights_WK}")
-                print(f"decoder_weights_WQ --> {decoder_weights_WQ}\n")
+                    print(f"decoder_weights_WV --> {decoder_weights_WV}")
+                    print(f"decoder_weights_WK --> {decoder_weights_WK}")
+                    print(f"decoder_weights_WQ --> {decoder_weights_WQ}\n")
 
-                wandb.log({
-                    f"grad_norm/encoder_weights_WV": encoder_weights_WV,
-                    f"grad_norm/encoder_weights_WK": encoder_weights_WK,
-                    f"grad_norm/encoder_weights_WQ": encoder_weights_WQ,
-                    f"grad_norm/decoder_weights_WV": decoder_weights_WV,
-                    f"grad_norm/decoder_weights_WK": decoder_weights_WK,
-                    f"grad_norm/decoder_weights_WQ": decoder_weights_WQ,
-                })
+                    wandb.log({
+                        f"grad_norm/encoder_weights_WV": encoder_weights_WV,
+                        f"grad_norm/encoder_weights_WK": encoder_weights_WK,
+                        f"grad_norm/encoder_weights_WQ": encoder_weights_WQ,
+                        f"grad_norm/decoder_weights_WV": decoder_weights_WV,
+                        f"grad_norm/decoder_weights_WK": decoder_weights_WK,
+                        f"grad_norm/decoder_weights_WQ": decoder_weights_WQ,
+                    })
                 #######################
 
                 optimizer.step()
@@ -303,7 +305,7 @@ def run_training_experiment() -> None:
         "dropout"          : 0.1,
         "train_batch_size" : 32,
         "test_batch_size"  : 32,
-        "epochs"           : 1,
+        "epochs"           : 15,
         "device"           : device,
         'save_every'       : 4
     }
