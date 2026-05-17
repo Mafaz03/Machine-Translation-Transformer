@@ -97,18 +97,55 @@ def run_epoch(
             if is_train:
                 optimizer.zero_grad()
                 loss.backward()
-                for name, param in model.named_parameters():
+                encoder_weights_WV = 0
+                encoder_weights_WK = 0
+                encoder_weights_WQ = 0
 
-                    ## Gradient tracking ##
+                decoder_weights_WV = 0
+                decoder_weights_WK = 0
+                decoder_weights_WQ = 0
+
+                ## Gradient tracking ##
+                for name, param in model.named_parameters():
                     if param.grad is None:
                         continue
                     if "WQ" in name or "WK" in name or "WV" in name:
-                        grad_norm = param.grad.detach().norm(2).item()
-                        print(f"{name} --> {grad_norm}")
-                        wandb.log({
-                            f"grad_norm/{name}": grad_norm
-                        })
-                    #######################
+
+                        # encoder
+                        if "encoder" in name and ".weights" in name:
+                            if "WQ" in name:
+                                encoder_weights_WQ += param.grad.detach().norm(2).item()
+                            if "WK" in name:
+                                encoder_weights_WK += param.grad.detach().norm(2).item()       
+                            if "WV" in name:
+                                encoder_weights_WV += param.grad.detach().norm(2).item()
+                            
+                        if "decoder" in name and ".weights" in name:
+                            if "WQ" in name:
+                                decoder_weights_WQ += param.grad.detach().norm(2).item()
+                            if "WK" in name:
+                                decoder_weights_WK += param.grad.detach().norm(2).item()       
+                            if "WV" in name:
+                                decoder_weights_WV += param.grad.detach().norm(2).item()
+
+                grad_norm = param.grad.detach().norm(2).item()
+                print(f"encoder_weights_WV --> {encoder_weights_WV}")
+                print(f"encoder_weights_WK --> {encoder_weights_WK}")
+                print(f"encoder_weights_WQ --> {encoder_weights_WQ}\n")
+
+                print(f"decoder_weights_WV --> {decoder_weights_WV}")
+                print(f"decoder_weights_WK --> {decoder_weights_WK}")
+                print(f"decoder_weights_WQ --> {decoder_weights_WQ}\n")
+
+                wandb.log({
+                    f"grad_norm/{encoder_weights_WV}": encoder_weights_WV,
+                    f"grad_norm/{encoder_weights_WK}": encoder_weights_WK,
+                    f"grad_norm/{encoder_weights_WQ}": encoder_weights_WQ,
+                    f"grad_norm/{decoder_weights_WV}": decoder_weights_WV,
+                    f"grad_norm/{decoder_weights_WK}": decoder_weights_WK,
+                    f"grad_norm/{decoder_weights_WQ}": decoder_weights_WQ,
+                })
+                #######################
 
                 optimizer.step()
 
