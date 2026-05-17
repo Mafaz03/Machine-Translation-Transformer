@@ -32,7 +32,7 @@ def scaled_dot_product_attention(
 
     d_k = K.shape[-1]
     KT  = K.transpose(-2, -1)
-    scores = torch.matmul(Q, KT) / math.sqrt(d_k)          # (B, H, seq_q, seq_k)
+    # scores = torch.matmul(Q, KT) / math.sqrt(d_k)          # (B, H, seq_q, seq_k)
     scores = torch.matmul(Q, KT)# / math.sqrt(d_k)          # (B, H, seq_q, seq_k)
     
     if mask is not None: 

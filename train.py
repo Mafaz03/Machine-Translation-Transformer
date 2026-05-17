@@ -303,7 +303,7 @@ def run_training_experiment() -> None:
         "dropout"          : 0.1,
         "train_batch_size" : 32,
         "test_batch_size"  : 32,
-        "epochs"           : 10,
+        "epochs"           : 1,
         "device"           : device,
         'save_every'       : 4
     }
