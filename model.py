@@ -135,7 +135,7 @@ class MultiHeadAttention(nn.Module):
         V = V.view(B, seq_k, self.num_heads, self.d_k).transpose(1, 2)  # [batch, seq_v, num_heads, d_k]
                                                         # After transpose [batch, num_heads, seq_v, d_k]
 
-        output, _ = scaled_dot_product_attention(Q, K, V, mask, self.dropout)     # output: (B, num_heads, seq_q, d_k), attn: (B, H, seq_q, seq_k)
+        output, attn_weights = scaled_dot_product_attention(Q, K, V, mask, self.dropout)     # output: (B, num_heads, seq_q, d_k), attn: (B, H, seq_q, seq_k)
 
         # Merging heads
         output = output.transpose(1, 2).contiguous()                # output: (B, seq_q, num_heads, d_k)
@@ -143,6 +143,7 @@ class MultiHeadAttention(nn.Module):
 
         # Final linear
         output = self.WO(output)
+        self.attn_weights = attn_weights
         return output
     
 class LearnedPositionalEncoding(nn.Module):
