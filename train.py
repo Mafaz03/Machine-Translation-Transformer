@@ -97,6 +97,19 @@ def run_epoch(
             if is_train:
                 optimizer.zero_grad()
                 loss.backward()
+                for name, param in model.named_parameters():
+
+                    ## Gradient tracking ##
+                    if param.grad is None:
+                        continue
+                    if "WQ" in name or "WK" in name or "WV" in name:
+                        grad_norm = param.grad.detach().norm(2).item()
+                        print(f"{name} --> {grad_norm}")
+                        wandb.log({
+                            f"grad_norm/{name}": grad_norm
+                        })
+                    #######################
+
                 optimizer.step()
 
                 if scheduler is not None:
