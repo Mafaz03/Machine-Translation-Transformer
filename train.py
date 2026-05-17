@@ -138,12 +138,12 @@ def run_epoch(
                 print(f"decoder_weights_WQ --> {decoder_weights_WQ}\n")
 
                 wandb.log({
-                    f"grad_norm/{encoder_weights_WV}": encoder_weights_WV,
-                    f"grad_norm/{encoder_weights_WK}": encoder_weights_WK,
-                    f"grad_norm/{encoder_weights_WQ}": encoder_weights_WQ,
-                    f"grad_norm/{decoder_weights_WV}": decoder_weights_WV,
-                    f"grad_norm/{decoder_weights_WK}": decoder_weights_WK,
-                    f"grad_norm/{decoder_weights_WQ}": decoder_weights_WQ,
+                    f"grad_norm/encoder_weights_WV": encoder_weights_WV,
+                    f"grad_norm/encoder_weights_WK": encoder_weights_WK,
+                    f"grad_norm/encoder_weights_WQ": encoder_weights_WQ,
+                    f"grad_norm/decoder_weights_WV": decoder_weights_WV,
+                    f"grad_norm/decoder_weights_WK": decoder_weights_WK,
+                    f"grad_norm/decoder_weights_WQ": decoder_weights_WQ,
                 })
                 #######################
 
