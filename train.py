@@ -110,23 +110,23 @@ def run_epoch(
                     if param.grad is None:
                         continue
                     if "WQ" in name or "WK" in name or "WV" in name:
-
+                        param_grad = param.grad.detach().norm(2).item()     
                         # encoder
-                        if "encoder" in name and ".weights" in name:
+                        if "encoder" in name and ".weight" in name:
                             if "WQ" in name:
-                                encoder_weights_WQ += param.grad.detach().norm(2).item()
+                                encoder_weights_WQ += param_grad
                             if "WK" in name:
-                                encoder_weights_WK += param.grad.detach().norm(2).item()       
+                                encoder_weights_WK += param_grad
                             if "WV" in name:
-                                encoder_weights_WV += param.grad.detach().norm(2).item()
+                                encoder_weights_WV += param_grad
                             
-                        if "decoder" in name and ".weights" in name:
+                        if "decoder" in name and ".weight" in name:
                             if "WQ" in name:
-                                decoder_weights_WQ += param.grad.detach().norm(2).item()
+                                decoder_weights_WQ += param_grad
                             if "WK" in name:
-                                decoder_weights_WK += param.grad.detach().norm(2).item()       
+                                decoder_weights_WK += param_grad
                             if "WV" in name:
-                                decoder_weights_WV += param.grad.detach().norm(2).item()
+                                decoder_weights_WV += param_grad
 
                 grad_norm = param.grad.detach().norm(2).item()
                 print(f"encoder_weights_WV --> {encoder_weights_WV}")
