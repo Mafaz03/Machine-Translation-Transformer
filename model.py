@@ -149,12 +149,18 @@ class MultiHeadAttention(nn.Module):
 class LearnedPositionalEncoding(nn.Module):
     def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000):
         super().__init__()
-        self.dropout = nn.Dropout(dropout)
- 
-        self.embedding = torch.nn.Embedding(max_len, d_model)
 
-    def forward(self, x:torch.tensor):
-        return self.dropout(self.embedding(x))
+        self.dropout = nn.Dropout(dropout)
+        self.embedding = nn.Embedding(max_len, d_model)
+
+    def forward(self, x):
+        B, seq_len, _ = x.shape
+
+        positions = torch.arange(seq_len, device=x.device).unsqueeze(0).expand(B, seq_len)
+
+        pos_embed = self.embedding(positions)
+
+        return self.dropout(x + pos_embed)
 
 
 class PositionalEncoding(nn.Module):
@@ -245,7 +251,8 @@ class DecoderLayer(nn.Module):
 
         self.ffn = PositionwiseFeedForward(d_model, d_ff, dropout)
         
-        self.pos_encoding  = PositionalEncoding(d_model = d_model, dropout = dropout, max_len = 5000)
+        # self.pos_encoding  = PositionalEncoding(d_model = d_model, dropout = dropout, max_len = 5000)
+        self.pos_encoding  = LearnedPositionalEncoding(d_model = d_model, dropout = dropout, max_len = 5000)
 
         self.layer_norm1 = torch.nn.LayerNorm(d_model)
         self.layer_norm2 = torch.nn.LayerNorm(d_model)
@@ -348,7 +355,8 @@ class Transformer(nn.Module):
         self.src_embedding = nn.Embedding(src_vocab_size, d_model)
         self.tgt_embedding = nn.Embedding(tgt_vocab_size, d_model)
         
-        self.positional_encodings = PositionalEncoding(d_model = d_model, dropout = dropout, max_len = 5000)
+        # self.positional_encodings = PositionalEncoding(d_model = d_model, dropout = dropout, max_len = 5000)
+        self.positional_encodings = LearnedPositionalEncoding(d_model = d_model, dropout = dropout, max_len = src_vocab_size)
 
         encoder_layer = EncoderLayer(d_model = d_model, num_heads = num_heads, d_ff = d_ff, dropout = dropout)
         self.encoder  = Encoder(layer = encoder_layer, N = N)
