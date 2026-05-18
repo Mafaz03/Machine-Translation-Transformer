@@ -252,7 +252,7 @@ class DecoderLayer(nn.Module):
         self.ffn = PositionwiseFeedForward(d_model, d_ff, dropout)
         
         # self.pos_encoding  = PositionalEncoding(d_model = d_model, dropout = dropout, max_len = 5000)
-        self.pos_encoding  = LearnedPositionalEncoding(d_model = d_model, dropout = dropout, max_len = 5000)
+        # self.pos_encoding  = LearnedPositionalEncoding(d_model = d_model, dropout = dropout, max_len = 5000)
 
         self.layer_norm1 = torch.nn.LayerNorm(d_model)
         self.layer_norm2 = torch.nn.LayerNorm(d_model)
