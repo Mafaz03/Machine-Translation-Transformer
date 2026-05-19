@@ -1,6 +1,10 @@
 # Machine Translation Transformer
 
 Github:https://github.com/Mafaz03/Machine-Translation-Transformer
+
+
+--
+
 WandB report: https://wandb.ai/mafaz03/Machine%20Translation%20Transformer/reports/Machine-Translation-Transformer--VmlldzoxNjkyMTU4Mg?accessToken=ujyxun87k4we9sz1e6hddckc2fohwmbodoeoyig56uzrfmhuruj9j2uqqisnkkbe
 
 A PyTorch implementation of a seq2seq Transformer model for German-to-English translation using the Multi30k dataset.
