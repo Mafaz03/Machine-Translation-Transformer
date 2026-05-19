@@ -8,13 +8,23 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader, Dataset
 
 import torch
+from spacy.cli import download
+
+def load_spacy_model(model_name, **kwargs):
+    try:
+        return spacy.load(model_name, disable=["parser", "ner", "tagger"])
+    except OSError:
+        print(f"Downloading {model_name}...")
+        download(model_name)
+
+        return spacy.load(model_name, disable=["parser", "ner", "tagger"])
 class Multi30kDataset:
     def __init__(self, split: str = "train"):
         self.dataset = load_dataset("bentrevett/multi30k")
         self.split = split
 
-        self.spacy_de = spacy.load("de_core_news_sm", disable=["parser", "ner", "tagger"]) # German
-        self.spacy_en = spacy.load("en_core_web_sm", disable=["parser", "ner", "tagger"])  # english
+        self.spacy_de = load_spacy_model("de_core_news_sm", disable=["parser", "ner", "tagger"]) # German
+        self.spacy_en = load_spacy_model("en_core_web_sm", disable=["parser", "ner", "tagger"])  # english
 
         self.specials = ["<unk>", "<pad>", "<sos>", "<eos>"] 
         self.build_vocab()
