@@ -336,8 +336,8 @@ class Transformer(nn.Module):
 
     def __init__(
         self,
-        src_vocab_size: int,
-        tgt_vocab_size: int,
+        src_vocab_size: Optional[int] = None,
+        tgt_vocab_size: Optional[int] = None,
         d_model:   int   = 512,
         N:         int   = 6,
         num_heads: int   = 8,
@@ -351,6 +351,11 @@ class Transformer(nn.Module):
         self.num_heads = num_heads
         self.d_ff = d_ff
         self.dropout = dropout
+
+        if not (src_vocab_size or tgt_vocab_size):
+            language_dataset = Multi30kDataset(split = "train")
+            src_vocab_size = len(language_dataset.de_vocab)
+            src_vocab_size = len(language_dataset.en_vocab)
 
         self.src_embedding = nn.Embedding(src_vocab_size, d_model)
         self.tgt_embedding = nn.Embedding(tgt_vocab_size, d_model)
@@ -420,7 +425,7 @@ class Transformer(nn.Module):
         logits = self.decode(memory, src_mask, tgt, tgt_mask)
         return logits
 
-    def infer(self, src_sentence: str, src_vocab_size: int, tgt_vocab_size: int) -> str:
+    def infer(self, src_sentence: str) -> str:
         # build vocab
         language_dataset = Multi30kDataset(split = "train")
         src_vocab = len(language_dataset.de_vocab)
