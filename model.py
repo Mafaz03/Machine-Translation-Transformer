@@ -425,32 +425,77 @@ class Transformer(nn.Module):
         logits = self.decode(memory, src_mask, tgt, tgt_mask)
         return logits
 
-    def infer(self, src_sentence: str) -> str:
-        # build vocab
-        language_dataset = Multi30kDataset(split = "train")
-        src_vocab = len(language_dataset.de_vocab)
-        tgt_vocab = len(language_dataset.en_vocab)
+    # def infer(self, src_sentence: str) -> str:
+    #     # build vocab
+    #     language_dataset = Multi30kDataset(split = "train")
+    #     src_vocab = len(language_dataset.de_vocab)
+    #     tgt_vocab = len(language_dataset.en_vocab)
 
-        # text to tokens
-        # src = torch.tensor([language_dataset.de_vocab[i] for i in src_sentence.split()]).unsqueeze(0)
+    #     # text to tokens
+    #     # src = torch.tensor([language_dataset.de_vocab[i] for i in src_sentence.split()]).unsqueeze(0)
+    #     tokens = language_dataset.tokenize_de(src_sentence)
+    #     src = torch.tensor([language_dataset.de_vocab.get(tok, language_dataset.de_vocab["<unk>"])for tok in tokens]).unsqueeze(0)
+
+    #     src_mask = make_src_mask(src).to(src.device)
+
+    #     # text to tokens
+    #     transformer = Transformer(src_vocab_size = src_vocab, tgt_vocab_size = tgt_vocab,
+    #                       d_model = 512, N = 6, num_heads = 8, d_ff = 2048,
+    #                       dropout = 0.1)
+
+    #     load_checkpoint("checkpoint.pt", transformer)
+
+    #     # decode
+    #     sos_idx = 2
+    #     eos_idx = 3
+    #     prediction_idx = greedy_decode(transformer, src, src_mask, 40, sos_idx, eos_idx, src.device, break_at_eos = True)
+    #     no_clean = ' '.join([language_dataset.en_itos[i.item()] for i in prediction_idx[0]])
+    #     clean = no_clean.split("<sos>")[-1].strip().split("<eos>")[0].strip()
+
+    #     return clean
+
+    def infer(self, src_sentence: str) -> str:
+
+        # build vocab only once
+        language_dataset = Multi30kDataset(split="train")
+
+        # tokenize
         tokens = language_dataset.tokenize_de(src_sentence)
-        src = torch.tensor([language_dataset.de_vocab.get(tok, language_dataset.de_vocab["<unk>"])for tok in tokens]).unsqueeze(0)
+
+        # convert to ids
+        src = torch.tensor([
+            language_dataset.de_vocab.get(tok, language_dataset.de_vocab["<unk>"])
+            for tok in tokens
+        ]).unsqueeze(0)
 
         src_mask = make_src_mask(src).to(src.device)
 
-        # text to tokens
-        transformer = Transformer(src_vocab_size = src_vocab, tgt_vocab_size = tgt_vocab,
-                          d_model = 512, N = 6, num_heads = 8, d_ff = 2048,
-                          dropout = 0.1)
-
-        load_checkpoint("checkpoint.pt", transformer)
-
         # decode
-        sos_idx = 2
-        eos_idx = 3
-        prediction_idx = greedy_decode(transformer, src, src_mask, 40, sos_idx, eos_idx, src.device, break_at_eos = True)
-        no_clean = ' '.join([language_dataset.en_itos[i.item()] for i in prediction_idx[0]])
-        clean = no_clean.split("<sos>")[-1].strip().split("<eos>")[0].strip()
+        sos_idx = language_dataset.en_vocab["<sos>"]
+        eos_idx = language_dataset.en_vocab["<eos>"]
+
+        prediction_idx = greedy_decode(
+            self,                     
+            src,
+            src_mask,
+            max_len=40,
+            start_symbol=sos_idx,
+            end_symbol=eos_idx,
+            device=src.device,
+            break_at_eos=True
+        )
+
+        no_clean = ' '.join([
+            language_dataset.en_itos[i.item()]
+            for i in prediction_idx[0]
+        ])
+
+        clean = (
+            no_clean.split("<sos>")[-1]
+            .strip()
+            .split("<eos>")[0]
+            .strip()
+        )
 
         return clean
     
