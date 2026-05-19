@@ -359,7 +359,8 @@ class Transformer(nn.Module):
             language_dataset = Multi30kDataset(split = "train")
             src_vocab_size = len(language_dataset.de_vocab)
             tgt_vocab_size = len(language_dataset.en_vocab)
-        self.language_dataset = language_dataset
+            self.language_dataset = language_dataset
+            
 
         # download + load trained weights once during initialization
         checkpoint_path = "checkpoint.pt"
@@ -373,6 +374,8 @@ class Transformer(nn.Module):
 
         try:
             load_checkpoint(checkpoint_path, self)
+            checkpoint = torch.load("checkpoint.pt", map_location="cpu")
+            self.load_state_dict(checkpoint["model_state_dict"])
             print("model loaded")
             self.eval()
         except Exception as e:
