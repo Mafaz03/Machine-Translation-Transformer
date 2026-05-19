@@ -6,6 +6,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import os
+import gdown
+
 from dataset import Multi30kDataset
 
 
@@ -358,6 +361,23 @@ class Transformer(nn.Module):
             tgt_vocab_size = len(language_dataset.en_vocab)
         self.language_dataset = language_dataset
 
+        # download + load trained weights once during initialization
+        checkpoint_path = "checkpoint.pt"
+
+        if not os.path.exists(checkpoint_path):
+            gdown.download(
+                "https://drive.google.com/uc?id=1X6lGvCA8A6SnRNWUIZiQh_f58f6depmU",
+                checkpoint_path,
+                quiet=False
+            )
+
+        try:
+            load_checkpoint(checkpoint_path, self)
+            print("model loaded")
+            self.eval()
+        except Exception as e:
+            print(f"could not load checkpoint: {e}")
+
         self.src_embedding = nn.Embedding(src_vocab_size, d_model)
         self.tgt_embedding = nn.Embedding(tgt_vocab_size, d_model)
         
@@ -499,7 +519,6 @@ class Transformer(nn.Module):
         print(f"src_sentence:\n{src_sentence}")
         print(f"result:\n{' '.join(tokens)}")
         return " ".join(tokens)
-        return clean
     
 
 
