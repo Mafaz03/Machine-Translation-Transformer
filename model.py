@@ -497,7 +497,7 @@ class Transformer(nn.Module):
             tokens.append(word)
 
         print(f"src_sentence:\n{src_sentence}")
-        print(f"result:\n{" ".join(tokens)}")
+        print(f"result:\n{' '.join(tokens)}")
         return " ".join(tokens)
         return clean
     
