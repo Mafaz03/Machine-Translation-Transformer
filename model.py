@@ -482,6 +482,8 @@ class Transformer(nn.Module):
 
     def infer(self, src_sentence: str) -> str:
 
+        src_sentence = f"<sos> {src_sentence} <eos> <pad> <pad>"
+
         language_dataset = self.language_dataset
 
         tokens = language_dataset.tokenize_de(src_sentence)
