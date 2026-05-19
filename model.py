@@ -456,13 +456,10 @@ class Transformer(nn.Module):
 
     def infer(self, src_sentence: str) -> str:
 
-        # build vocab only once
-        language_dataset = Multi30kDataset(split="train")
+        language_dataset = self.language_dataset
 
-        # tokenize
         tokens = language_dataset.tokenize_de(src_sentence)
 
-        # convert to ids
         src = torch.tensor([
             language_dataset.de_vocab.get(tok, language_dataset.de_vocab["<unk>"])
             for tok in tokens
@@ -470,33 +467,35 @@ class Transformer(nn.Module):
 
         src_mask = make_src_mask(src).to(src.device)
 
-        # decode
         sos_idx = language_dataset.en_vocab["<sos>"]
         eos_idx = language_dataset.en_vocab["<eos>"]
 
-        prediction_idx = greedy_decode(
-            self,                     
-            src,
-            src_mask,
-            max_len=40,
-            start_symbol=sos_idx,
-            end_symbol=eos_idx,
-            device=src.device,
-            break_at_eos=True
-        )
+        with torch.no_grad():
+            prediction_idx = greedy_decode(
+                self,
+                src,
+                src_mask,
+                max_len=40,
+                start_symbol=sos_idx,
+                end_symbol=eos_idx,
+                device=src.device,
+                break_at_eos=True
+            )
 
-        no_clean = ' '.join([
-            language_dataset.en_itos[i.item()]
-            for i in prediction_idx[0]
-        ])
+        tokens = []
 
-        clean = (
-            no_clean.split("<sos>")[-1]
-            .strip()
-            .split("<eos>")[0]
-            .strip()
-        )
+        for idx in prediction_idx[0]:
+            word = language_dataset.en_itos[idx.item()]
 
+            if word == "<sos>":
+                continue
+
+            if word == "<eos>":
+                break
+
+            tokens.append(word)
+
+        return " ".join(tokens)
         return clean
     
 
