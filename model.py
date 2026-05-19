@@ -362,6 +362,25 @@ class Transformer(nn.Module):
             self.language_dataset = language_dataset
             
 
+
+        self.src_embedding = nn.Embedding(src_vocab_size, d_model)
+        self.tgt_embedding = nn.Embedding(tgt_vocab_size, d_model)
+        
+        self.positional_encodings = PositionalEncoding(d_model = d_model, dropout = dropout, max_len = 5000)
+        # self.positional_encodings = LearnedPositionalEncoding(d_model = d_model, dropout = dropout, max_len = src_vocab_size)
+
+        encoder_layer = EncoderLayer(d_model = d_model, num_heads = num_heads, d_ff = d_ff, dropout = dropout)
+        self.encoder  = Encoder(layer = encoder_layer, N = N)
+
+        decoder_layer = DecoderLayer(d_model = d_model, num_heads = num_heads, d_ff = d_ff, dropout = dropout)
+        self.decoder  = Decoder(layer = decoder_layer, N = N)
+
+        self.fc_out = nn.Linear(d_model, tgt_vocab_size)
+
+        self.src_vocab_size = src_vocab_size
+        self.tgt_vocab_size = tgt_vocab_size
+
+
         # download + load trained weights once during initialization
         checkpoint_path = "checkpoint.pt"
 
@@ -380,23 +399,6 @@ class Transformer(nn.Module):
             self.eval()
         except Exception as e:
             print(f"could not load checkpoint: {e}")
-
-        self.src_embedding = nn.Embedding(src_vocab_size, d_model)
-        self.tgt_embedding = nn.Embedding(tgt_vocab_size, d_model)
-        
-        self.positional_encodings = PositionalEncoding(d_model = d_model, dropout = dropout, max_len = 5000)
-        # self.positional_encodings = LearnedPositionalEncoding(d_model = d_model, dropout = dropout, max_len = src_vocab_size)
-
-        encoder_layer = EncoderLayer(d_model = d_model, num_heads = num_heads, d_ff = d_ff, dropout = dropout)
-        self.encoder  = Encoder(layer = encoder_layer, N = N)
-
-        decoder_layer = DecoderLayer(d_model = d_model, num_heads = num_heads, d_ff = d_ff, dropout = dropout)
-        self.decoder  = Decoder(layer = decoder_layer, N = N)
-
-        self.fc_out = nn.Linear(d_model, tgt_vocab_size)
-
-        self.src_vocab_size = src_vocab_size
-        self.tgt_vocab_size = tgt_vocab_size
 
     def encode(
         self,
