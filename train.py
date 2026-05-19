@@ -356,7 +356,7 @@ def run_training_experiment() -> None:
     scheduler = NoamScheduler(optimizer, d_model = config["d_model"], warmup_steps = 5000)
 
     # 7. Instantiate LabelSmoothingLoss(vocab_size, pad_idx, smoothing=0.1)
-    loss_fn = LabelSmoothingLoss(vocab_size = config["tgt_vocab_size"], pad_idx = 1, smoothing = 0.1)
+    loss_fn = LabelSmoothingLoss(vocab_size = config["tgt_vocab_size"], pad_idx = 1, smoothing = 0.06)
 
     # 8. Training loop:
     for epoch in range(config['epochs']):
