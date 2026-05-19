@@ -386,7 +386,7 @@ class Transformer(nn.Module):
 
         if not os.path.exists(checkpoint_path):
             gdown.download(
-                "https://drive.google.com/uc?id=1X6lGvCA8A6SnRNWUIZiQh_f58f6depmU",
+                "https://drive.google.com/uc?id=10BzKNXLpB0cI0VvkcE-x-PfW1txe7nN",
                 checkpoint_path,
                 quiet=False
             )
