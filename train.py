@@ -31,13 +31,13 @@ class LabelSmoothingLoss(nn.Module):
         log_probs = F.log_softmax(logits, dim=-1)   # (B*T, V)
 
         ## delete
-        probs = log_probs.exp()
-        correct_token_probs = probs.gather(dim=1, index=target.unsqueeze(1)).squeeze(1)
-        non_pad_mask = target != self.pad_idx
-        correct_token_probs = correct_token_probs[non_pad_mask]
-        wandb.log({
-            "prediction_confidence": correct_token_probs.mean().item()
-        })
+        # probs = log_probs.exp()
+        # correct_token_probs = probs.gather(dim=1, index=target.unsqueeze(1)).squeeze(1)
+        # non_pad_mask = target != self.pad_idx
+        # correct_token_probs = correct_token_probs[non_pad_mask]
+        # wandb.log({
+        #     "prediction_confidence": correct_token_probs.mean().item()
+        # })
         ###########
 
         with torch.no_grad():

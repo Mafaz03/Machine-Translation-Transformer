@@ -420,7 +420,7 @@ class Transformer(nn.Module):
         logits = self.decode(memory, src_mask, tgt, tgt_mask)
         return logits
 
-    def infer(self, src_sentence: str) -> str:
+    def infer(self, src_sentence: str, src_vocab_size: int, tgt_vocab_size: int) -> str:
         # build vocab
         language_dataset = Multi30kDataset(split = "train")
         src_vocab = len(language_dataset.de_vocab)
