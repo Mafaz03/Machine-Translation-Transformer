@@ -355,7 +355,7 @@ class Transformer(nn.Module):
         if not (src_vocab_size or tgt_vocab_size):
             language_dataset = Multi30kDataset(split = "train")
             src_vocab_size = len(language_dataset.de_vocab)
-            src_vocab_size = len(language_dataset.en_vocab)
+            tgt_vocab_size = len(language_dataset.en_vocab)
 
         self.src_embedding = nn.Embedding(src_vocab_size, d_model)
         self.tgt_embedding = nn.Embedding(tgt_vocab_size, d_model)
