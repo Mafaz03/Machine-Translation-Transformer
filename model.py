@@ -432,7 +432,10 @@ class Transformer(nn.Module):
         tgt_vocab = len(language_dataset.en_vocab)
 
         # text to tokens
-        src = torch.tensor([language_dataset.de_vocab[i] for i in src_sentence.split()]).unsqueeze(0)
+        # src = torch.tensor([language_dataset.de_vocab[i] for i in src_sentence.split()]).unsqueeze(0)
+        tokens = language_dataset.tokenize_de(src_sentence)
+        src = torch.tensor([language_dataset.de_vocab.get(tok, language_dataset.de_vocab["<unk>"])for tok in tokens]).unsqueeze(0)
+
         src_mask = make_src_mask(src).to(src.device)
 
         # text to tokens
