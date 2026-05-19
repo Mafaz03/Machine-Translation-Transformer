@@ -374,6 +374,7 @@ class Transformer(nn.Module):
 
         try:
             checkpoint = torch.load("checkpoint.pt", map_location="cpu")
+            print("checkpoint loaded")
             self.load_state_dict(checkpoint["model_state_dict"])
             print("model loaded")
             self.eval()
